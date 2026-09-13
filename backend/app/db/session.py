@@ -1,0 +1,30 @@
+"""
+SQLAlchemy engine + session factory.
+
+Import `SessionLocal` (via `get_db` dependency in app/api/deps.py) rather
+than constructing your own engine/session elsewhere.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Generator
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
+
+from app.config import get_settings
+
+settings = get_settings()
+
+engine = create_engine(settings.database_url, pool_pre_ping=True, future=True)
+
+SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+
+
+def get_db() -> Generator[Session, None, None]:
+    """FastAPI dependency: yields a DB session and guarantees it's closed."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
