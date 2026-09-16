@@ -4,16 +4,16 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: recoverai_postgres
+    container_name: study_recoverai_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: recoverai
-      POSTGRES_PASSWORD: recoverai
-      POSTGRES_DB: recoverai
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Walchand%40123
+      POSTGRES_DB: study_recoverai
     ports:
       - "5432:5432"
     volumes:
-      - recoverai_postgres_data:/var/lib/postgresql/data
+      - study_recoverai_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U recoverai -d recoverai"]
       interval: 5s
@@ -22,7 +22,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: recoverai_redis
+    container_name: study_recoverai_redis
     restart: unless-stopped
     ports:
       - "6379:6379"
@@ -33,4 +33,4 @@ services:
       retries: 10
 
 volumes:
-  recoverai_postgres_data:
+  study_recoverai_postgres_data:
