@@ -2,7 +2,7 @@
 
 ## Overview
 
-```mermaid
+```mermaid(original)
 flowchart TD
     RZP["Razorpay (test mode)\nwebhooks"] -->|POST /api/webhooks/razorpay| API
 
@@ -41,6 +41,98 @@ flowchart TD
 
     FE["React + Vite frontend\nsrc/api/*.ts"] -->|fetch, JSON| CASEAPI
     FE -.->|dashboard, cases, case detail, simulator| USER["Judge / operator"]
+```
+// ![image-comment](.image-comment/image-20260916-093920-2hi8bl.png)
+
+```mermaid(improved by chatgpt)
+flowchart TD
+
+    %% INPUT
+    RZP["Razorpay<br/>Test Mode"]
+
+    %% BACKEND
+    subgraph BE["FastAPI Backend"]
+
+        WEB["api/webhooks.py<br/>Thin Webhook Route"]
+        SIMAPI["api/simulator.py"]
+        SIMSVC["simulator_service.py"]
+
+        ORCH["webhook_orchestrator.py<br/>Main Coordinator"]
+
+        VERIFY["webhook_verifier.py"]
+        NORMALIZE["event_normalizer.py"]
+        IDEM["idempotency.py"]
+
+        CLASS["classifier.py"]
+        LLM["LLM Classifier Fallback"]
+
+        CASE["case_service.py"]
+        RULES["stopping_rules.py"]
+        DECISION["decision_engine.py<br/>Pure Function"]
+
+        EXEC["recovery_executor.py"]
+        AUDIT["audit_service.py"]
+
+        CASEAPI["Cases / Metrics APIs"]
+        METRICS["metrics_service.py"]
+
+        WEB --> ORCH
+
+        SIMAPI --> SIMSVC
+        SIMSVC -->|"NormalizedEvent"| ORCH
+
+        ORCH --> VERIFY
+        ORCH --> NORMALIZE
+        ORCH --> IDEM
+        ORCH --> CLASS
+        ORCH --> CASE
+        ORCH --> RULES
+        ORCH --> DECISION
+        ORCH --> EXEC
+        ORCH --> AUDIT
+
+        CLASS -.->|"Unknown only"| LLM
+
+        CASEAPI --> CASE
+        CASEAPI --> AUDIT
+        CASEAPI --> METRICS
+    end
+
+    %% DATABASE
+    DB[("PostgreSQL<br/>Cases<br/>Attempts<br/>Audit Logs<br/>Processed Events<br/>Stopping Rules")]
+
+    CASE --> DB
+    IDEM --> DB
+    RULES --> DB
+    AUDIT --> DB
+    EXEC --> DB
+
+    %% BACKGROUND EXECUTION
+    BROKER[("Celery / Redis Broker")]
+
+    WORKER["Celery Worker<br/>execute_action"]
+
+    EXEC -->|"Enqueue Recovery Action"| BROKER
+    BROKER -->|"Consume Task"| WORKER
+
+    %% RAZORPAY OUTBOUND
+    CLIENT["Razorpay Integration Client"]
+
+    WORKER -->|"execute_attempt"| CLIENT
+    CLIENT -->|"Test Mode API Call"| RZP
+    WORKER -->|"Update Attempt"| DB
+
+    %% PROVIDER EVENTS
+    RZP -->|"Signed Webhook"| WEB
+
+    %% FRONTEND
+    UI["React + Vite + TypeScript<br/>Dashboard / Cases / Detail / Simulator"]
+
+    USER["Judge / Operator"]
+
+    USER --> UI
+    UI -->|"Fetch JSON"| CASEAPI
+    UI -->|"Run Simulation"| SIMAPI
 ```
 
 ## Responsibilities
